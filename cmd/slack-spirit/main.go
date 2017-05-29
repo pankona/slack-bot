@@ -41,6 +41,16 @@ func main() {
 		log.Println("SLACK_TOKEN environment variable is empty. please set token.")
 		os.Exit(1)
 	}
+	userName := os.Getenv("HACK_SPIRIT_USERNAME")
+	if token == "" {
+		log.Println("HACK_SPIRIT_USERNAME environment variable is empty. please set token.")
+		os.Exit(1)
+	}
+	password := os.Getenv("HACK_SPIRIT_PASSWORD")
+	if token == "" {
+		log.Println("HACK_SPIRIT_PASSWORD environment variable is empty. please set token.")
+		os.Exit(1)
+	}
 	api := slack.New(token)
 
 	rtm := api.NewRTM()
@@ -67,10 +77,13 @@ func main() {
 			switch text {
 			case "shukkin":
 				sendReply(rtm, ev.Channel, "shukkin acknowledged...", nil)
-				out, err = doCommand("hack-spirit", "start_work")
+				out, err = doCommand("hack-spirit", "start_work", "-u", userName, "-p", password)
 			case "taikin":
 				sendReply(rtm, ev.Channel, "taikin acknowledged...", nil)
-				out, err = doCommand("hack-spirit", "finish_work")
+				out, err = doCommand("hack-spirit", "finish_work", "-u", userName, "-p", password)
+			case "status":
+				sendReply(rtm, ev.Channel, "status acknowledged...", nil)
+				out, err = doCommand("hack-spirit", "work_status", "-u", userName, "-p", password)
 			default:
 				out, err = "unknown operation...", nil
 			}
