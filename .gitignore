@@ -1,1 +1,3 @@
 *.swp
+cmd/slack-bot/slack-bot
+slack-bot
