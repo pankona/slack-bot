@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"log"
-	"log/syslog"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/nlopes/slack"
 )
 
 const (
-	botName = "slack-spirit"
+	botName = "slack-bot"
 )
 
 func doCommand(command string, option ...string) (string, error) {
@@ -25,32 +25,22 @@ func sendReply(rtm *slack.RTM, channel string, out string, err error) {
 		out += fmt.Sprintf("%s", err)
 	}
 	rtm.SendMessage(rtm.NewOutgoingMessage(out, channel))
-	log.Printf("reply: %s\n", out)
 }
 
 func main() {
-	logger, err := syslog.New(syslog.LOG_LOCAL0, botName)
-	if err != nil {
-		log.Println("failed to configure logger. exit.")
-		os.Exit(1)
-	}
-	log.SetOutput(logger)
+	//logger, err := syslog.New(syslog.LOG_LOCAL0, botName)
+	//if err != nil {
+	//	log.Println("failed to configure logger. exit.")
+	//	os.Exit(1)
+	//}
+	//log.SetOutput(logger)
 
 	token := os.Getenv("SLACK_TOKEN")
 	if token == "" {
 		log.Println("SLACK_TOKEN environment variable is empty. please set token.")
 		os.Exit(1)
 	}
-	userName := os.Getenv("HACK_SPIRIT_USERNAME")
-	if token == "" {
-		log.Println("HACK_SPIRIT_USERNAME environment variable is empty. please set token.")
-		os.Exit(1)
-	}
-	password := os.Getenv("HACK_SPIRIT_PASSWORD")
-	if token == "" {
-		log.Println("HACK_SPIRIT_PASSWORD environment variable is empty. please set token.")
-		os.Exit(1)
-	}
+
 	api := slack.New(token)
 
 	rtm := api.NewRTM()
@@ -72,22 +62,32 @@ func main() {
 			}
 
 			text := ev.Msg.Text
-			var out = ""
-			var err error
-			switch text {
-			case "shukkin":
-				sendReply(rtm, ev.Channel, "shukkin acknowledged...", nil)
-				out, err = doCommand("hack-spirit", "start_work", "-u", userName, "-p", password)
-			case "taikin":
-				sendReply(rtm, ev.Channel, "taikin acknowledged...", nil)
-				out, err = doCommand("hack-spirit", "finish_work", "-u", userName, "-p", password)
-			case "status":
-				sendReply(rtm, ev.Channel, "status acknowledged...", nil)
-				out, err = doCommand("hack-spirit", "work_status", "-u", userName, "-p", password)
+			commands := strings.Split(text, " ")
+			var (
+				out = ""
+				err error
+			)
+			switch commands[0] {
+			case "do":
+				sendReply(rtm, ev.Channel, commands[1]+" command execution acknowledged...", nil)
+				out, err = doCommand(commands[1], commands[2:]...)
 			default:
 				out, err = "unknown operation...", nil
 			}
-			sendReply(rtm, ev.Channel, out, err)
+			// TODO: error check
+
+			if len(out) < 4000 {
+				sendReply(rtm, ev.Channel, out, err)
+			} else {
+				params := slack.FileUploadParameters{
+					Channels: []string{ev.Channel},
+					Content:  out,
+				}
+				_, e := api.UploadFile(params)
+				if e != nil {
+					log.Printf("failed to upload file: %s", e.Error())
+				}
+			}
 
 		case *slack.RTMError:
 			log.Printf("Error: %s\n", ev.Error())
