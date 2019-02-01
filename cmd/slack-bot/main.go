@@ -28,13 +28,6 @@ func sendReply(rtm *slack.RTM, channel string, out string, err error) {
 }
 
 func main() {
-	//logger, err := syslog.New(syslog.LOG_LOCAL0, botName)
-	//if err != nil {
-	//	log.Println("failed to configure logger. exit.")
-	//	os.Exit(1)
-	//}
-	//log.SetOutput(logger)
-
 	token := os.Getenv("SLACK_TOKEN")
 	if token == "" {
 		log.Println("SLACK_TOKEN environment variable is empty. please set token.")
